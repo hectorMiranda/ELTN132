@@ -204,7 +204,7 @@ A + Ā = 1
 A · Ā = 0
 ```
 
-DeMorgan's Theorems:
+De Morgan's Theorems:
 ```
 (A + B)' = A' · B'
 (A · B)' = A' + B'
