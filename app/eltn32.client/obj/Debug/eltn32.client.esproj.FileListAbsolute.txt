@@ -1,1 +1,2 @@
 C:\marcetux\ELTN32\eltn32.client\obj\Debug\eltn32.client.esproj.CoreCompileInputs.cache
+C:\marcetux\ELTN132\app\eltn32.client\obj\Debug\eltn32.client.esproj.CoreCompileInputs.cache

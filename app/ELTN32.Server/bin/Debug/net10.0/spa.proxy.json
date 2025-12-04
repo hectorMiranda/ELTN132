@@ -3,7 +3,7 @@
 "ServerUrl": "https://localhost:51468",
 "RedirectUrl": "",
 "LaunchCommand": "npm run dev",
-"WorkingDirectory": "C:\\marcetux\\ELTN32\\ELTN32.Server\\..\\eltn32.client",
+"WorkingDirectory": "C:\\marcetux\\ELTN132\\app\\ELTN32.Server\\..\\eltn32.client",
 "MaxTimeoutInSeconds": "120",
 "KeepRunning": "false"
 }

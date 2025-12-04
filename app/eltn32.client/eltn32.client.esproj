@@ -8,4 +8,8 @@
     <!-- Folder where production build objects will be placed -->
     <BuildOutputFolder>$(MSBuildProjectDirectory)\dist</BuildOutputFolder>
   </PropertyGroup>
+  <Target Name="BuildClientApp" BeforeTargets="Build" Condition="'$(Configuration)' == 'Debug'">
+    <Exec WorkingDirectory="..\eltn32.client" Command="npm install" />
+    <Exec WorkingDirectory="..\eltn32.client" Command="npm run export:copy" />
+  </Target>
 </Project>
