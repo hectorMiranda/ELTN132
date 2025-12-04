@@ -1,0 +1,7 @@
+{
+  "buildCommand": "cd eltn32.client && npm run build",
+  "outputDirectory": "eltn32.client/.next",
+  "installCommand": "cd eltn32.client && npm install",
+  "framework": "nextjs",
+  "rootDirectory": "eltn32.client"
+}
