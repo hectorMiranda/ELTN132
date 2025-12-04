@@ -7,8 +7,8 @@ const MENU = [
   { title: 'Decimal to Binary', path: '/decimal-to-binary' },
   { title: 'Boolean Expressions', path: '/boolean-expressions' },
   { title: 'Boolean Algebra', path: '/boolean-algebra' },
-  { title: 'Boolean Algebra Identities', path: '/boolean-algebra-identities' },
-  { title: 'De Morgan Identities', path: '/de-morgan-identities' },
+  //{ title: 'Boolean Algebra Identities', path: '/boolean-algebra-identities' },
+  //{ title: 'De Morgan Identities', path: '/de-morgan-identities' },
   { title: 'Associative Rules', path: '/associative-rules' },
   { title: 'Logic Gates', path: '/logic-gates' },
   { title: 'K Map', path: '/k-map' },
@@ -21,7 +21,7 @@ export default function Sidebar() {
 
   return (
     <nav className="flex flex-col h-full">
-      <div className="px-6 py-4 text-lg font-semibold border-b border-slate-800">Logic Tools</div>
+          <div className="px-6 py-4 text-lg font-semibold border-b border-slate-800">Logic Tools for ELTN132</div>
 
       <ul className="p-4 space-y-1 overflow-auto">
         {MENU.map((item) => {

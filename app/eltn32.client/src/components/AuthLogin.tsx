@@ -15,6 +15,13 @@ export default function AuthLogin() {
 
   return (
     <form onSubmit={submit} className="flex items-center gap-2">
+      <input
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+        placeholder="User"
+        className="px-2 py-1 border rounded-md text-sm"
+        aria-label="username"
+      />
       <button type="submit" className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
         Login
       </button>
