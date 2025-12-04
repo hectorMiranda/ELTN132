@@ -1,30 +1,48 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { auth } from '../firebaseConfig'; // Assuming firebaseConfig.ts is in the parent directory
+import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 export default function AuthLogin() {
-  const [username, setUsername] = useState('');
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
-  const submit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoggedIn(true);
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const signInWithGoogle = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+    }
   };
 
-  if (loggedIn) {
-    return <div className="text-sm font-medium">Hello, {username || 'User'}</div>;
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out:", error);
+    }
+  };
+
+  if (user) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="text-sm font-medium">Hello, {user.displayName || 'User'}</div>
+        <button onClick={handleSignOut} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
+          Sign Out
+        </button>
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={submit} className="flex items-center gap-2">
-      <input
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-        placeholder="User"
-        className="px-2 py-1 border rounded-md text-sm"
-        aria-label="username"
-      />
-      <button type="submit" className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
-        Login
-      </button>
-    </form>
+    <button onClick={signInWithGoogle} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
+      Sign in with Google
+    </button>
   );
 }
