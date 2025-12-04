@@ -4,6 +4,11 @@
     <PackageJsonName Condition="$(PackageJsonName) == ''">eltn32.client</PackageJsonName>
     <PackageJsonVersion Condition="$(PackageJsonVersion) == ''">1.0.0</PackageJsonVersion>
     <PackageJsonPrivate Condition="$(PackageJsonPrivate) == ''">true</PackageJsonPrivate>
+    <PackageJsonBrowserslist Condition="$(PackageJsonBrowserslist) == ''">[
+  "\u003E0.2%",
+  "not dead",
+  "not op_mini all"
+]</PackageJsonBrowserslist>
     <PackageJsonScriptsDev Condition="$(PackageJsonScriptsDev) == ''">next dev -p 3000</PackageJsonScriptsDev>
     <PackageJsonScriptsBuild Condition="$(PackageJsonScriptsBuild) == ''">next build</PackageJsonScriptsBuild>
     <PackageJsonScriptsBuildExport Condition="$(PackageJsonScriptsBuildExport) == ''">next build</PackageJsonScriptsBuildExport>
