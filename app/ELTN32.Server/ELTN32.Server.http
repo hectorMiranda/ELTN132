@@ -1,0 +1,6 @@
+@ELTN32.Server_HostAddress = http://localhost:5223
+
+GET {{ELTN32.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

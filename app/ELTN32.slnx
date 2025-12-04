@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="eltn32.client/eltn32.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="ELTN32.Server/ELTN32.Server.csproj" />
+</Solution>
