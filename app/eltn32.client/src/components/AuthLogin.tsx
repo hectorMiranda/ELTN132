@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { auth } from '../firebaseConfig';
 import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged, User, signOut } from 'firebase/auth';
 
 export default function AuthLogin() {
     const [user, setUser] = useState<User | null>(null);
     const [isClient, setIsClient] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         // Only run on client side
@@ -35,6 +37,8 @@ export default function AuthLogin() {
 
         try {
             await signOut(auth);
+            // Redirect to landing page after sign out
+            router.push('/');
         } catch (error) {
             console.error("Error signing out:", error);
         }
@@ -49,7 +53,7 @@ export default function AuthLogin() {
         return (
             <div className="flex items-center gap-2">
                 <div className="text-sm font-medium">Hello, {user.displayName || 'User'}</div>
-                <button onClick={handleSignOut} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
+                <button onClick={handleSignOut} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm hover:bg-slate-800 transition-colors">
                     Sign Out
                 </button>
             </div>
@@ -57,7 +61,7 @@ export default function AuthLogin() {
     }
 
     return (
-        <button onClick={signInWithGoogle} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm">
+        <button onClick={signInWithGoogle} className="px-3 py-1.5 bg-slate-900 text-white rounded-md text-sm hover:bg-slate-800 transition-colors">
             Sign in with Google
         </button>
     );

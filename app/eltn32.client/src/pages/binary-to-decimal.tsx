@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import ProtectedRoute from '../components/ProtectedRoute';
 
-export default function BinaryToDecimal() {
+function BinaryToDecimalContent() {
     // Explicitly type the state as an array of numbers
     const [bits, setBits] = useState<number[]>(Array(8).fill(0));
 
@@ -77,5 +78,13 @@ export default function BinaryToDecimal() {
 
             </div>
         </section>
+    );
+}
+
+export default function BinaryToDecimal() {
+    return (
+        <ProtectedRoute>
+            <BinaryToDecimalContent />
+        </ProtectedRoute>
     );
 }

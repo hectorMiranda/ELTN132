@@ -1,8 +1,9 @@
 ﻿import { useState, useMemo } from 'react';
+import ProtectedRoute from '../components/ProtectedRoute';
 
 type LogicGate = 'AND' | 'OR' | 'XOR' | 'NAND' | 'NOR' | 'XNOR';
 
-export default function BooleanExpressions() {
+function BooleanExpressionsContent() {
     // STATE: Inputs for the interactive lab
     const [inputA, setInputA] = useState<boolean>(false);
     const [inputB, setInputB] = useState<boolean>(false);
@@ -118,8 +119,8 @@ export default function BooleanExpressions() {
                                     key={gate}
                                     onClick={() => setSelectedGate(gate as LogicGate)}
                                     className={`px-3 py-1 rounded text-sm font-semibold transition-colors ${selectedGate === gate
-                                            ? 'bg-blue-600 text-white shadow-md'
-                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                        ? 'bg-blue-600 text-white shadow-md'
+                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                                         }`}
                                 >
                                     {gate}
@@ -135,8 +136,8 @@ export default function BooleanExpressions() {
                                 <button
                                     onClick={() => setInputA(!inputA)}
                                     className={`w-12 h-12 rounded-full font-mono text-xl border-4 transition-all ${inputA
-                                            ? 'bg-green-500 border-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]'
-                                            : 'bg-white border-slate-300 text-slate-300'
+                                        ? 'bg-green-500 border-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]'
+                                        : 'bg-white border-slate-300 text-slate-300'
                                         }`}
                                 >
                                     {inputA ? '1' : '0'}
@@ -154,8 +155,8 @@ export default function BooleanExpressions() {
                                 <button
                                     onClick={() => setInputB(!inputB)}
                                     className={`w-12 h-12 rounded-full font-mono text-xl border-4 transition-all ${inputB
-                                            ? 'bg-green-500 border-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]'
-                                            : 'bg-white border-slate-300 text-slate-300'
+                                        ? 'bg-green-500 border-green-600 text-white shadow-[0_0_15px_rgba(34,197,94,0.6)]'
+                                        : 'bg-white border-slate-300 text-slate-300'
                                         }`}
                                 >
                                     {inputB ? '1' : '0'}
@@ -168,8 +169,8 @@ export default function BooleanExpressions() {
                             <div className="flex flex-col items-center gap-2">
                                 <span className="font-mono font-bold text-slate-500">Output</span>
                                 <div className={`w-16 h-16 rounded-full flex items-center justify-center font-mono text-3xl font-bold border-4 transition-all ${evaluateLogic(inputA, inputB, selectedGate)
-                                        ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-[0_0_20px_rgba(250,204,21,0.8)]'
-                                        : 'bg-slate-800 border-slate-900 text-slate-600'
+                                    ? 'bg-yellow-400 border-yellow-500 text-yellow-900 shadow-[0_0_20px_rgba(250,204,21,0.8)]'
+                                    : 'bg-slate-800 border-slate-900 text-slate-600'
                                     }`}>
                                     {evaluateLogic(inputA, inputB, selectedGate) ? '1' : '0'}
                                 </div>
@@ -267,5 +268,13 @@ export default function BooleanExpressions() {
                 </div>
             </div>
         </section>
+    );
+}
+
+export default function BooleanExpressions() {
+    return (
+        <ProtectedRoute>
+            <BooleanExpressionsContent />
+        </ProtectedRoute>
     );
 }
