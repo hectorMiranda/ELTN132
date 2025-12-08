@@ -4,14 +4,16 @@ import { User } from 'firebase/auth';
 
 interface UserSettings {
     searchBarEnabled: boolean;
-    analyticsEnabled: boolean;
+    darkModeEnabled: boolean;
+    notificationsEnabled: boolean;
 }
 
 export default function Settings() {
     const [user, setUser] = useState<User | null>(null);
     const [settings, setSettings] = useState<UserSettings>({
         searchBarEnabled: false,
-        analyticsEnabled: true,
+        darkModeEnabled: false,
+        notificationsEnabled: true,
     });
     const [saved, setSaved] = useState(false);
 
@@ -147,30 +149,64 @@ export default function Settings() {
                             </div>
                         </div>
 
-                        {/* Analytics Setting */}
+                        {/* Dark Mode Setting */}
                         <div className="p-6 hover:bg-slate-50 transition-colors">
                             <div className="flex items-start justify-between gap-4">
                                 <div className="flex-1">
                                     <div className="flex items-center gap-2 mb-2">
                                         <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                                         </svg>
-                                        <h3 className="font-semibold text-slate-900">Analytics</h3>
+                                        <h3 className="font-semibold text-slate-900">Dark Mode</h3>
+                                        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full font-medium">
+                                            Coming Soon
+                                        </span>
                                     </div>
                                     <p className="text-sm text-slate-600">
-                                        Help us improve by tracking anonymous usage statistics
+                                        Switch to a dark color scheme for reduced eye strain
                                     </p>
                                 </div>
 
                                 <label className="relative inline-flex items-center cursor-pointer">
                                     <input
                                         type="checkbox"
-                                        checked={settings.analyticsEnabled}
-                                        onChange={(e) => updateSetting('analyticsEnabled', e.target.checked)}
+                                        checked={settings.darkModeEnabled}
+                                        onChange={(e) => updateSetting('darkModeEnabled', e.target.checked)}
+                                        disabled={true}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-11 h-6 bg-slate-100 rounded-full peer cursor-not-allowed transition-all">
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow transition-all ${settings.darkModeEnabled ? 'translate-x-5' : 'translate-x-0'
+                                            }`} />
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Notifications Setting */}
+                        <div className="p-6 hover:bg-slate-50 transition-colors">
+                            <div className="flex items-start justify-between gap-4">
+                                <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                                        </svg>
+                                        <h3 className="font-semibold text-slate-900">Notifications</h3>
+                                    </div>
+                                    <p className="text-sm text-slate-600">
+                                        Receive updates about new tools, features, and course materials
+                                    </p>
+                                </div>
+
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={settings.notificationsEnabled}
+                                        onChange={(e) => updateSetting('notificationsEnabled', e.target.checked)}
                                         className="sr-only peer"
                                     />
                                     <div className="w-11 h-6 bg-slate-200 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-4 peer-focus:ring-blue-300 transition-all">
-                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow transition-all ${settings.analyticsEnabled ? 'translate-x-5' : 'translate-x-0'
+                                        <div className={`absolute top-0.5 left-0.5 bg-white w-5 h-5 rounded-full shadow transition-all ${settings.notificationsEnabled ? 'translate-x-5' : 'translate-x-0'
                                             }`} />
                                     </div>
                                 </label>
@@ -221,7 +257,8 @@ export default function Settings() {
 export function useSettings(): UserSettings {
     const [settings, setSettings] = useState<UserSettings>({
         searchBarEnabled: false,
-        analyticsEnabled: true,
+        darkModeEnabled: false,
+        notificationsEnabled: true,
     });
 
     useEffect(() => {
