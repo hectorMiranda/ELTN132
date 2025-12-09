@@ -34,6 +34,55 @@ const COLORS = {
     CANVAS_BG: '#E5E5E5',
 };
 
+// IC Configuration: dimensions and colors by type
+interface ICConfig {
+    width: number;
+    height: number;
+    color: string;
+}
+
+const IC_CONFIG: Record<string, ICConfig> = {
+    // Counters - Purple/Violet
+    '74193': { width: 160, height: 280, color: '#DDA0DD' },
+    '74192': { width: 160, height: 280, color: '#DDA0DD' },
+    '74190': { width: 160, height: 280, color: '#DDA0DD' },
+    '74191': { width: 160, height: 280, color: '#DDA0DD' },
+    '4040': { width: 160, height: 280, color: '#DDA0DD' },
+    '4060': { width: 160, height: 280, color: '#DDA0DD' },
+    
+    // Flip-Flops - Light Blue
+    '7474': { width: 120, height: 240, color: '#87CEEB' },
+    '7475': { width: 120, height: 240, color: '#87CEEB' },
+    '7476': { width: 120, height: 240, color: '#87CEEB' },
+    
+    // Decoders/Drivers - Light Green
+    '7442': { width: 140, height: 280, color: '#90EE90' },
+    '7447': { width: 140, height: 240, color: '#90EE90' },
+    '7485': { width: 120, height: 240, color: '#90EE90' },
+    
+    // Inverters - Light Coral
+    '7404': { width: 120, height: 240, color: '#F08080' },
+    
+    // AND Gates - Light Yellow
+    '7408': { width: 120, height: 240, color: '#FFFFE0' },
+    
+    // OR Gates - Peach
+    '7432': { width: 120, height: 240, color: '#FFDAB9' },
+    
+    // NAND Gates - Light Pink
+    '7400': { width: 120, height: 240, color: '#FFB6C1' },
+    
+    // NOR Gates - Lavender
+    '7402': { width: 120, height: 240, color: '#E6E6FA' },
+    
+    // XOR Gates - Light Cyan
+    '7486': { width: 120, height: 240, color: '#E0FFFF' },
+};
+
+const getICConfig = (name: string): ICConfig => {
+    return IC_CONFIG[name] || { width: 120, height: 200, color: '#EEEEEE' };
+};
+
 function DigViewerContent() {
     const [file, setFile] = useState<File | null>(null);
     const [wires, setWires] = useState<Wire[]>([]);
@@ -51,7 +100,14 @@ function DigViewerContent() {
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
 
+    // Zoom and Pan State
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isPanning, setIsPanning] = useState(false);
+    const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const minimapRef = useRef<HTMLCanvasElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // --- Azure Function Integration ---
@@ -173,6 +229,9 @@ function DigViewerContent() {
         ctx.fillStyle = COLORS.CANVAS_BG;
         ctx.fillRect(0, 0, canvasRef.current.width, canvasRef.current.height);
         
+        // Apply zoom and pan transformations
+        ctx.translate(pan.x, pan.y);
+        ctx.scale(zoom, zoom);
         ctx.translate(-bounds.minX, -bounds.minY);
 
         ctx.beginPath();
@@ -198,7 +257,52 @@ function DigViewerContent() {
             ctx.restore();
         });
 
-    }, [wires, components, bounds]);
+    }, [wires, components, bounds, zoom, pan]);
+
+    // --- Minimap Renderer ---
+    useEffect(() => {
+        if (!minimapRef.current || !bounds || !canvasRef.current) return;
+        const ctx = minimapRef.current.getContext('2d');
+        if (!ctx) return;
+
+        const minimapW = 200;
+        const minimapH = 150;
+        const scale = Math.min(minimapW / bounds.width, minimapH / bounds.height);
+
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.fillStyle = '#2D3748';
+        ctx.fillRect(0, 0, minimapW, minimapH);
+
+        ctx.scale(scale, scale);
+        ctx.translate(-bounds.minX, -bounds.minY);
+
+        // Draw wires
+        ctx.strokeStyle = '#60A5FA';
+        ctx.lineWidth = 1 / scale;
+        ctx.beginPath();
+        wires.forEach(w => {
+            ctx.moveTo(w.p1.x, w.p1.y);
+            ctx.lineTo(w.p2.x, w.p2.y);
+        });
+        ctx.stroke();
+
+        // Draw components as rectangles
+        ctx.fillStyle = '#9CA3AF';
+        components.forEach(comp => {
+            ctx.fillRect(comp.pos.x - 10, comp.pos.y - 10, 20, 20);
+        });
+
+        // Draw viewport rectangle
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.strokeStyle = '#F59E0B';
+        ctx.lineWidth = 2;
+        const viewX = (bounds.minX - pan.x / zoom) * scale;
+        const viewY = (bounds.minY - pan.y / zoom) * scale;
+        const viewW = (canvasRef.current.width / zoom) * scale;
+        const viewH = (canvasRef.current.height / zoom) * scale;
+        ctx.strokeRect(viewX, viewY, viewW, viewH);
+
+    }, [wires, components, bounds, zoom, pan]);
 
     // --- Component Drawing functions (keeping same as before) ---
     const drawComponent = (ctx: CanvasRenderingContext2D, comp: Component) => {
@@ -267,20 +371,51 @@ function DigViewerContent() {
                 break;
             case 'Seven-Seg-Hex':
                 ctx.fillStyle = '#111';
-                ctx.fillRect(0, 0, 30, 50);
+                ctx.fillRect(0, 0, 120, 140);
                 ctx.strokeStyle = '#555';
-                ctx.strokeRect(0, 0, 30, 50);
+                ctx.strokeRect(0, 0, 120, 140);
                 ctx.fillStyle = '#F00';
-                ctx.font = '30px monospace';
-                ctx.fillText('8', 15, 25);
+                ctx.font = '60px monospace';
+                ctx.fillText('8', 60, 70);
                 break;
             case 'Text':
                 ctx.fillStyle = COLORS.TEXT;
-                ctx.font = comp.attributes['FONT'] || '14px sans-serif';
+                ctx.font = comp.attributes['FONT'] || '18px sans-serif';
                 ctx.textAlign = 'left';
                 ctx.textBaseline = 'top';
                 const textContent = comp.attributes['Description'] || '';
-                ctx.fillText(textContent, 0, 0);
+                ctx.fillText(textContent, -130, 0);
+                break;
+            case 'Splitter':
+                // Draw splitter as a simple vertical black bar
+                const bits = parseInt(comp.attributes['Bits'] || '4');
+                const spacing = 24; // spacing between bit lines
+                const totalHeight = (bits - 1) * spacing;
+                
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(0, -totalHeight / 32, 18, totalHeight);
+                
+                // Draw individual bit lines with numbers
+                ctx.strokeStyle = COLORS.COMPONENT_STROKE;
+                ctx.lineWidth = 2;
+                ctx.font = '10px sans-serif';
+                ctx.fillStyle = COLORS.TEXT;
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                
+                for (let i = 0; i < bits; i++) {
+                    const y = -totalHeight / 2 + (i * spacing);
+                    
+                    // Draw connection point (small circle)
+                    // ctx.beginPath();
+                    // ctx.arc(8, y, 3, 0, Math.PI * 2);
+                    // ctx.fillStyle = '#FF0000';
+                    // ctx.fill();
+                    
+                    // // Draw bit number
+                    // ctx.fillStyle = COLORS.TEXT;
+                    // ctx.fillText(i.toString(), 14, y);
+                }
                 break;
             default:
                 if (type.match(/^\d{4}/)) {
@@ -321,21 +456,19 @@ function DigViewerContent() {
     };
 
     const drawIC = (ctx: CanvasRenderingContext2D, name: string, label?: string) => {
-        // Determine height based on IC type
-        let h = 240; // default height
-        const w = 120;
+        const config = getICConfig(name);
+        const { width: w, height: h, color } = config;
         
-        // Larger ICs need more height (counters, complex chips)
-        if (['74193', '74192', '74190', '74191', '4040', '4060', '7442'].includes(name)) {
-            h = 280;
-        } else if (['7474', '7475', '7476', '7447', '7485'].includes(name)) {
-            h = 240;
-        } 
-        
-        ctx.fillStyle = '#EEEEEE';
+        ctx.fillStyle = color;
         ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = COLORS.COMPONENT_STROKE;
+        ctx.lineWidth = 2;
         ctx.strokeRect(0, 0, w, h);
         ctx.beginPath(); ctx.arc(w / 2, 0, 5, 0, Math.PI, false); ctx.stroke();
+        
+        // Ensure text alignment is centered
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
         ctx.fillStyle = COLORS.TEXT;
         ctx.font = 'bold 18px monospace';
         ctx.fillText(name, w / 2, h / 2 - 5);
@@ -354,11 +487,31 @@ function DigViewerContent() {
             ctx.moveTo(-2, 18); ctx.lineTo(2, 18);
             ctx.stroke();
         } else {
+            // Draw upward arrow for VDD/Power
+            ctx.strokeStyle = COLORS.COMPONENT_STROKE;
+            ctx.fillStyle = '#000000';
+            ctx.lineWidth = 2;
+            
+            // Draw vertical line
             ctx.beginPath();
-            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.moveTo(0, 20);
+            ctx.lineTo(0, 0);
             ctx.stroke();
-            ctx.moveTo(0, 4); ctx.lineTo(0, 15);
+            
+            // Draw arrow head (filled triangle)
+            ctx.beginPath();
+            ctx.moveTo(0, -10);      // Top point
+            ctx.lineTo(-8, 0);       // Bottom left
+            ctx.lineTo(8, 0);        // Bottom right
+            ctx.closePath();
+            ctx.fill();
             ctx.stroke();
+            
+            // Draw red dot at connection point
+            ctx.beginPath();
+            ctx.arc(0, 20, 3, 0, Math.PI * 2);
+            ctx.fillStyle = '#FF0000';
+            ctx.fill();
         }
     };
 
@@ -369,7 +522,39 @@ function DigViewerContent() {
             const text = await f.text();
             setXmlContent(text);
             parseDigFile(text);
+            // Reset zoom and pan when loading new file
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
         }
+    };
+
+    // --- Zoom and Pan Handlers ---
+    const handleZoomIn = () => setZoom(z => Math.min(z * 1.2, 5));
+    const handleZoomOut = () => setZoom(z => Math.max(z / 1.2, 0.1));
+    const handleZoomReset = () => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        setIsPanning(true);
+        setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y });
+    };
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (isPanning) {
+            setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsPanning(false);
+    };
+
+    const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+        setZoom(z => Math.max(0.1, Math.min(5, z * delta)));
     };
 
     // --- Statistics ---
@@ -466,12 +651,20 @@ function DigViewerContent() {
                                 <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">IC Inventory</h3>
                                 <div className="space-y-2">
                                     {Object.keys(stats.icCounts).length > 0 ? (
-                                        Object.entries(stats.icCounts).map(([ic, count]) => (
-                                            <div key={ic} className="flex justify-between items-center bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-700/50">
-                                                <span className="font-mono font-bold text-slate-200 text-sm">{ic}</span>
-                                                <span className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-1 rounded-full font-bold border border-indigo-500/30">×{count}</span>
-                                            </div>
-                                        ))
+                                        Object.entries(stats.icCounts).map(([ic, count]) => {
+                                            const config = getICConfig(ic);
+                                            return (
+                                                <div key={ic} className="flex items-center gap-3 bg-slate-900/50 px-3 py-2 rounded-lg border border-slate-700/50">
+                                                    <div 
+                                                        className="w-6 h-6 rounded border-2 border-slate-600 flex-shrink-0"
+                                                        style={{ backgroundColor: config.color }}
+                                                        title={`Color: ${config.color}`}
+                                                    />
+                                                    <span className="font-mono font-bold text-slate-200 text-sm flex-1">{ic}</span>
+                                                    <span className="bg-indigo-500/20 text-indigo-300 text-xs px-2 py-1 rounded-full font-bold border border-indigo-500/30">×{count}</span>
+                                                </div>
+                                            );
+                                        })
                                     ) : (
                                         <p className="text-slate-500 text-sm italic">No 74xx/40xx chips found</p>
                                     )}
@@ -507,16 +700,62 @@ function DigViewerContent() {
                 )}
 
                 {/* Center Canvas */}
-                <div className="flex-1 flex flex-col rounded-lg overflow-hidden" style={{ backgroundColor: '#E5E5E5' }}>
-                    <div className="flex-1 overflow-auto">
+                <div className="flex-1 flex flex-col rounded-lg overflow-hidden relative" style={{ backgroundColor: '#E5E5E5' }}>
+                    <div className="flex-1 overflow-hidden relative">
                         {bounds ? (
-                            <canvas
-                                ref={canvasRef}
-                                width={bounds.width}
-                                height={bounds.height}
-                                className="mx-auto my-auto"
-                                style={{ minWidth: bounds.width, minHeight: bounds.height }}
-                            />
+                            <>
+                                <canvas
+                                    ref={canvasRef}
+                                    width={bounds.width}
+                                    height={bounds.height}
+                                    className="w-full h-full cursor-move"
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    onWheel={handleWheel}
+                                />
+                                
+                                {/* Zoom Controls */}
+                                <div className="absolute top-4 right-4 flex flex-col gap-2 bg-slate-800 rounded-lg p-2 shadow-lg">
+                                    <button
+                                        onClick={handleZoomIn}
+                                        className="w-10 h-10 bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center justify-center transition"
+                                        title="Zoom In"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                        </svg>
+                                    </button>
+                                    <button
+                                        onClick={handleZoomReset}
+                                        className="w-10 h-10 bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center justify-center transition text-xs font-bold"
+                                        title="Reset Zoom"
+                                    >
+                                        {Math.round(zoom * 100)}%
+                                    </button>
+                                    <button
+                                        onClick={handleZoomOut}
+                                        className="w-10 h-10 bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center justify-center transition"
+                                        title="Zoom Out"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                {/* Minimap */}
+                                <div className="absolute bottom-4 right-4 bg-slate-800 rounded-lg p-2 shadow-lg">
+                                    <div className="text-xs text-slate-400 mb-1 font-medium">Overview</div>
+                                    <canvas
+                                        ref={minimapRef}
+                                        width={200}
+                                        height={150}
+                                        className="rounded border border-slate-600"
+                                    />
+                                </div>
+                            </>
                         ) : (
                             <div className="h-full flex items-center justify-center">
                                 <div className="text-center text-slate-500">
