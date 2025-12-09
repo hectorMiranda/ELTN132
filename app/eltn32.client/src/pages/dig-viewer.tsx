@@ -216,13 +216,34 @@ function DigViewerContent() {
             case 'NAnd': drawGatePath(ctx, 'AND', true); break;
             case 'NOr': drawGatePath(ctx, 'OR', true); break;
             case 'Tunnel':
+                const tunnelText = comp.attributes['NetName'] || 'TUN';
+                ctx.font = '10px monospace';
+                const textWidth = ctx.measureText(tunnelText).width;
+                const tunnelWidth = Math.max(50, textWidth + 20);
+                
                 ctx.strokeStyle = COLORS.TUNNEL_STROKE;
                 ctx.beginPath();
-                ctx.moveTo(0, -10); ctx.lineTo(40, -10); ctx.lineTo(50, 0); ctx.lineTo(40, 10); ctx.lineTo(0, 10); ctx.closePath();
+                ctx.moveTo(0, -10); 
+                ctx.lineTo(tunnelWidth - 10, -10); 
+                ctx.lineTo(tunnelWidth, 0); 
+                ctx.lineTo(tunnelWidth - 10, 10); 
+                ctx.lineTo(0, 10); 
+                ctx.closePath();
                 ctx.stroke();
+                
+                // Counter-rotate text if tunnel is rotated 180 degrees
+                ctx.save();
+                if (comp.rotation === 2) {
+                    ctx.translate(tunnelWidth / 2, 0);
+                    ctx.rotate(Math.PI);
+                    ctx.translate(-tunnelWidth / 2, 0);
+                }
+                
                 ctx.fillStyle = COLORS.TEXT;
-                ctx.font = '10px monospace';
-                ctx.fillText(comp.attributes['NetName'] || 'TUN', 20, 0);
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(tunnelText, tunnelWidth / 2, 0);
+                ctx.restore();
                 break;
             case 'LED':
                 ctx.beginPath();
@@ -252,6 +273,14 @@ function DigViewerContent() {
                 ctx.fillStyle = '#F00';
                 ctx.font = '30px monospace';
                 ctx.fillText('8', 15, 25);
+                break;
+            case 'Text':
+                ctx.fillStyle = COLORS.TEXT;
+                ctx.font = comp.attributes['FONT'] || '14px sans-serif';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'top';
+                const textContent = comp.attributes['Description'] || '';
+                ctx.fillText(textContent, 0, 0);
                 break;
             default:
                 if (type.match(/^\d{4}/)) {
@@ -292,13 +321,23 @@ function DigViewerContent() {
     };
 
     const drawIC = (ctx: CanvasRenderingContext2D, name: string, label?: string) => {
-        const w = 60, h = 80;
+        // Determine height based on IC type
+        let h = 240; // default height
+        const w = 120;
+        
+        // Larger ICs need more height (counters, complex chips)
+        if (['74193', '74192', '74190', '74191', '4040', '4060', '7442'].includes(name)) {
+            h = 280;
+        } else if (['7474', '7475', '7476', '7447', '7485'].includes(name)) {
+            h = 240;
+        } 
+        
         ctx.fillStyle = '#EEEEEE';
         ctx.fillRect(0, 0, w, h);
         ctx.strokeRect(0, 0, w, h);
         ctx.beginPath(); ctx.arc(w / 2, 0, 5, 0, Math.PI, false); ctx.stroke();
         ctx.fillStyle = COLORS.TEXT;
-        ctx.font = 'bold 12px monospace';
+        ctx.font = 'bold 18px monospace';
         ctx.fillText(name, w / 2, h / 2 - 5);
         if (label) {
             ctx.font = '10px sans-serif';
