@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { auth } from '../firebaseConfig';
 import { User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { TOOLS, CATEGORIES, getToolsByCategory } from '../config/tools';
 
 export default function Home() {
     const [user, setUser] = useState<User | null>(null);
@@ -29,98 +30,185 @@ export default function Home() {
         }
     };
 
-    const tools = [
-        {
-            title: 'Binary ↔ Decimal',
-            description: 'Convert between binary and decimal numbers with step-by-step visualization',
-            icon: '🔢',
-            path: '/binary-to-decimal',
-            color: 'from-blue-500 to-cyan-500'
-        },
-        {
-            title: 'Boolean Expressions',
-            description: 'Interactive logic gate simulator with truth tables',
-            icon: '⚡',
-            path: '/boolean-expressions',
-            color: 'from-purple-500 to-pink-500'
-        },
-        {
-            title: 'Boolean Algebra',
-            description: 'Explore and prove Boolean algebra identities',
-            icon: '🧮',
-            path: '/boolean-algebra',
-            color: 'from-green-500 to-teal-500'
-        },
-        {
-            title: 'Logic Gates',
-            description: 'Learn about AND, OR, NOT, NAND, NOR, XOR gates',
-            icon: '🔌',
-            path: '/logic-gates',
-            color: 'from-orange-500 to-red-500'
-        },
-        {
-            title: 'K-Map Solver',
-            description: 'Karnaugh map simplification made easy',
-            icon: '🗺️',
-            path: '/k-map',
-            color: 'from-indigo-500 to-blue-500'
-        },
-        {
-            title: 'MSI Components',
-            description: 'Medium-Scale Integration circuits and multiplexers',
-            icon: '⚙️',
-            path: '/msi',
-            color: 'from-yellow-500 to-orange-500'
-        },
-    ];
+    // Mock user activity data - In production, fetch from database
+    const userActivity = {
+        totalScore: 850,
+        completedTools: 4,
+        lastActivity: '2 hours ago',
+        recentScores: [
+            { tool: 'Boolean Expressions', score: 95, date: 'Today' },
+            { tool: 'Logic Gates', score: 88, date: 'Yesterday' },
+            { tool: 'K-Map Solver', score: 92, date: '2 days ago' },
+        ],
+        streak: 5,
+    };
 
     return (
         <div className="min-h-screen">
-            {/* Hero Section */}
-            <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
-                <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
-                <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 sm:py-32">
-                    <div className="text-center">
-                        <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-4 py-2 mb-8">
-                            <span className="relative flex h-3 w-3">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-3 w-3 bg-blue-500"></span>
-                            </span>
-                            <span className="text-sm font-medium text-blue-100">ELTN 132 Course Tools</span>
+            {user ? (
+                /* Logged In - Compact Dashboard using FULL WIDTH */
+                <div className="h-full">
+                    {/* Compact Hero - Reduced Padding */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white py-6">
+                        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+                        <div className="relative px-6">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-4">
+                                {user.photoURL && (
+                                    <img
+                                        src={user.photoURL}
+                                        alt="Profile"
+                                        className="w-14 h-14 sm:w-16 sm:h-16 rounded-full border-4 border-blue-500 shadow-lg"
+                                    />
+                                )}
+                                <div className="flex-1">
+                                    <h1 className="text-2xl sm:text-3xl font-bold mb-1">
+                                        Welcome back, {user.displayName?.split(' ')[0] || 'Student'}! 👋
+                                    </h1>
+                                    <p className="text-sm text-slate-300">Ready to continue learning?</p>
+                                </div>
+                            </div>
+
+                            {/* Horizontal Stats - Single Row */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+                                    <div className="text-xl sm:text-2xl font-bold text-cyan-400">{userActivity.totalScore}</div>
+                                    <div className="text-xs text-slate-300">Total Points</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+                                    <div className="text-xl sm:text-2xl font-bold text-green-400">{userActivity.completedTools}/{TOOLS.length}</div>
+                                    <div className="text-xs text-slate-300">Tools Completed</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+                                    <div className="text-xl sm:text-2xl font-bold text-orange-400">{userActivity.streak}</div>
+                                    <div className="text-xs text-slate-300">Day Streak 🔥</div>
+                                </div>
+                                <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
+                                    <div className="text-xs font-semibold text-purple-400">Last Active</div>
+                                    <div className="text-sm text-slate-300">{userActivity.lastActivity}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Main Content Area - 2 Column Layout */}
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
+                        
+                        {/* Left: Recent Activity - Compact Card */}
+                        <div className="lg:col-span-1">
+                            <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm sticky top-20">
+                                <h3 className="text-base font-semibold mb-3 flex items-center gap-2 text-slate-800">
+                                    <span>📊</span>
+                                    <span>Recent Scores</span>
+                                </h3>
+                                <div className="space-y-2">
+                                    {userActivity.recentScores.map((score, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-sm py-2 border-b border-slate-100 last:border-0">
+                                            <span className="text-slate-700 font-medium">{score.tool}</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-xs text-slate-400">{score.date}</span>
+                                                <span className={`font-bold text-sm ${score.score >= 90 ? 'text-green-600' : score.score >= 80 ? 'text-yellow-600' : 'text-orange-600'}`}>
+                                                    {score.score}%
+                                                </span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                                {/* Quick Actions */}
+                                <div className="mt-4 pt-4 border-t border-slate-100">
+                                    <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Quick Actions</h4>
+                                    <div className="space-y-2">
+                                        <Link href="/settings" className="block text-sm text-blue-600 hover:text-blue-700 font-medium">
+                                            ⚙️ Settings
+                                        </Link>
+                                        <button className="block text-sm text-slate-600 hover:text-slate-700 font-medium">
+                                            📈 View All Progress
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
-                        <h1 className="text-5xl sm:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400">
-                            Logic Made Simple
-                        </h1>
+                        {/* Right: Tools Grid - Takes More Space */}
+                        <div className="lg:col-span-2">
+                            <h2 className="text-xl font-bold text-slate-900 mb-4">
+                                Continue Learning
+                            </h2>
 
-                        <p className="text-xl sm:text-2xl text-slate-300 mb-8 max-w-3xl mx-auto">
-                            Interactive tools for mastering digital logic, Boolean algebra, and circuit design
-                        </p>
+                            {/* Tools organized by category - More compact */}
+                            {CATEGORIES.map(category => {
+                                const categoryTools = getToolsByCategory(category.key);
+                                if (categoryTools.length === 0) return null;
 
-                        {user ? (
-                            <div className="flex flex-col items-center gap-6">
-                                <div className="inline-flex items-center gap-2 text-green-400 text-lg">
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                    <span>Welcome back, {user.displayName || 'User'}!</span>
+                                return (
+                                    <div key={category.key} className="mb-6">
+                                        <h3 className="text-sm font-bold text-slate-600 mb-3 flex items-center gap-2 uppercase tracking-wide">
+                                            <span>{category.icon}</span>
+                                            <span>{category.label}</span>
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                            {categoryTools.map((tool) => (
+                                                <Link
+                                                    key={tool.path}
+                                                    href={tool.path}
+                                                    className="group relative bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-slate-200 hover:border-blue-300 overflow-hidden"
+                                                >
+                                                    <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-5 transition-opacity duration-300`} />
+
+                                                    <div className="relative flex items-start gap-3">
+                                                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color} flex items-center justify-center text-lg shadow-sm flex-shrink-0`}>
+                                                            {tool.icon}
+                                                        </div>
+                                                        <div className="flex-1 min-w-0">
+                                                            <h4 className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors text-sm mb-1">
+                                                                {tool.title}
+                                                            </h4>
+                                                            <p className="text-xs text-slate-600 line-clamp-2">
+                                                                {tool.description}
+                                                            </p>
+                                                        </div>
+                                                        <svg className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-1 transition-all flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </div>
+                                                </Link>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                /* Not Logged In - Show Full Landing Page */
+                <>
+                    {/* Compact Hero Section */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 text-white">
+                        <div className="absolute inset-0 bg-grid-white/[0.05] bg-[size:20px_20px]" />
+                        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
+                            <div className="text-center">
+                                <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/20 rounded-full px-3 py-1.5 mb-4">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                    </span>
+                                    <span className="text-xs font-medium text-blue-100">ELTN 132 Course Tools</span>
                                 </div>
-                                <a
-                                    href="#features"
-                                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all transform hover:-translate-y-0.5"
-                                >
-                                    <span>Browse Tools</span>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </a>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+                                <h1 className="text-4xl sm:text-6xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400">
+                                    Logic Made Simple
+                                </h1>
+
+                                <p className="text-lg sm:text-xl text-slate-300 mb-6 max-w-2xl mx-auto">
+                                    Master digital logic, Boolean algebra, and circuit design with {TOOLS.length} interactive tools
+                                </p>
+
                                 <button
                                     onClick={handleSignIn}
                                     disabled={isLoading}
-                                    className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg font-semibold text-lg hover:shadow-lg hover:shadow-blue-500/50 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-lg font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {isLoading ? (
                                         <>
@@ -143,175 +231,111 @@ export default function Home() {
                                     )}
                                 </button>
 
-                                <a
-                                    href="#features"
-                                    className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg font-semibold text-lg hover:bg-white/20 transition-all"
-                                >
-                                    <span>Explore Features</span>
-                                </a>
+                                <p className="mt-4 text-sm text-slate-400">
+                                    Track your progress, compete with friends, and unlock achievements
+                                </p>
                             </div>
-                        )}
+                        </div>
                     </div>
-                </div>
-            </div>
 
-            {/* Tools Grid */}
-            <div id="features" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl sm:text-5xl font-bold text-slate-900 mb-4">
-                        Interactive Learning Tools
-                    </h2>
-                    <p className="text-xl text-slate-600">
-                        {user ? 'Choose a tool to start practicing' : 'Sign in to access all tools'}
-                    </p>
-                </div>
+                    {/* Tools Grid - Full Width, More Columns */}
+                    <div className="px-4 sm:px-6 lg:px-8 py-8">
+                        <div className="text-center mb-6">
+                            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+                                Interactive Learning Tools
+                            </h2>
+                            <p className="text-slate-600">
+                                Sign in to track your progress across {TOOLS.length} tools
+                            </p>
+                        </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {tools.map((tool) => (
-                        user ? (
-                            // Authenticated: Show clickable links
-                            <Link
-                                key={tool.path}
-                                href={tool.path}
-                                className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-200 hover:border-transparent overflow-hidden"
-                            >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+                        {/* Show tools by category - 4 columns on large screens */}
+                        {CATEGORIES.map(category => {
+                            const categoryTools = getToolsByCategory(category.key);
+                            if (categoryTools.length === 0) return null;
 
-                                <div className="relative">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-2xl shadow-lg`}>
-                                            {tool.icon}
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                                            {tool.title}
-                                        </h3>
-                                    </div>
+                            return (
+                                <div key={category.key} className="mb-8">
+                                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
+                                        <span className="text-xl">{category.icon}</span>
+                                        <span>{category.label}</span>
+                                        <span className="text-sm font-normal text-slate-400">({categoryTools.length})</span>
+                                    </h3>
 
-                                    <p className="text-slate-600 mb-4">
-                                        {tool.description}
-                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                                        {categoryTools.map((tool) => (
+                                            <button
+                                                key={tool.path}
+                                                onClick={handleSignIn}
+                                                disabled={isLoading}
+                                                className="group relative bg-white rounded-lg p-4 shadow-sm hover:shadow-md transition-all duration-200 border border-slate-200 hover:border-blue-300 overflow-hidden text-left disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
 
-                                    <div className="flex items-center text-blue-600 font-semibold group-hover:gap-2 transition-all">
-                                        <span>Try it now</span>
-                                        <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
+                                                <div className="relative">
+                                                    <div className="flex items-center gap-3 mb-2">
+                                                        <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tool.color} flex items-center justify-center text-lg shadow-sm opacity-50`}>
+                                                            {tool.icon}
+                                                        </div>
+                                                        <h3 className="text-sm font-bold text-slate-900">
+                                                            {tool.title}
+                                                        </h3>
+                                                    </div>
+
+                                                    <p className="text-xs text-slate-600 mb-2 line-clamp-2">
+                                                        {tool.description}
+                                                    </p>
+
+                                                    <div className="flex items-center text-amber-600 font-semibold text-xs gap-1">
+                                                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                                                        </svg>
+                                                        <span>Sign in</span>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        ))}
                                     </div>
                                 </div>
-                            </Link>
-                        ) : (
-                            // Not Authenticated: Show login prompt
-                            <button
-                                key={tool.path}
-                                onClick={handleSignIn}
-                                disabled={isLoading}
-                                className="group relative bg-white rounded-2xl p-6 shadow-lg hover:shadow-2xl transition-all duration-300 border border-slate-200 hover:border-blue-300 overflow-hidden text-left disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${tool.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
+                            );
+                        })}
+                    </div>
 
-                                <div className="relative">
-                                    <div className="flex items-center gap-4 mb-4">
-                                        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tool.color} flex items-center justify-center text-2xl shadow-lg`}>
-                                            {tool.icon}
-                                        </div>
-                                        <h3 className="text-xl font-bold text-slate-900">
-                                            {tool.title}
-                                        </h3>
-                                    </div>
-
-                                    <p className="text-slate-600 mb-4">
-                                        {tool.description}
-                                    </p>
-
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex items-center text-amber-600 font-semibold gap-2">
-                                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                                            </svg>
-                                            <span>Sign in to access</span>
-                                        </div>
-                                        <svg className="w-5 h-5 text-blue-600 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
-                                    </div>
+                    {/* Compact Features Section */}
+                    <div className="bg-slate-50 py-8 px-4 sm:px-6 lg:px-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center text-xl mx-auto mb-2">
+                                    📊
                                 </div>
-                            </button>
-                        )
-                    ))}
-                </div>
-            </div>
-
-            {/* Features Section */}
-            <div className="bg-slate-50 py-16 sm:py-24">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
-                                📊
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">Track Progress</h3>
+                                <p className="text-xs text-slate-600">
+                                    Sign in to track your learning journey
+                                </p>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Track Progress</h3>
-                            <p className="text-slate-600">
-                                {user ? 'Monitor your learning journey with detailed analytics' : 'Sign in to track your quiz scores and progress'}
-                            </p>
-                        </div>
 
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
-                                🏆
+                            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center text-xl mx-auto mb-2">
+                                    🏆
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">Build Streaks</h3>
+                                <p className="text-xs text-slate-600">
+                                    Login to compete and earn badges
+                                </p>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Challenge Friends</h3>
-                            <p className="text-slate-600">
-                                {user ? 'Compete with other students in real-time challenges' : 'Login to challenge other users online'}
-                            </p>
-                            {!user && (
-                                <p className="text-sm text-amber-600 mt-2 font-semibold">Coming Soon!</p>
-                            )}
-                        </div>
 
-                        <div className="text-center">
-                            <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-4 shadow-lg">
-                                ✨
+                            <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-500 rounded-lg flex items-center justify-center text-xl mx-auto mb-2">
+                                    ✨
+                                </div>
+                                <h3 className="text-sm font-bold text-slate-900 mb-1">Interactive Learning</h3>
+                                <p className="text-xs text-slate-600">
+                                    Visual tools that make complex concepts easy
+                                </p>
                             </div>
-                            <h3 className="text-xl font-bold text-slate-900 mb-2">Interactive Learning</h3>
-                            <p className="text-slate-600">
-                                Visual, hands-on tools that make complex concepts easy to understand
-                            </p>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* CTA Section */}
-            {!user && (
-                <div className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white py-16">
-                    <div className="max-w-4xl mx-auto text-center px-4">
-                        <h2 className="text-3xl sm:text-4xl font-bold mb-4">
-                            Ready to Master Digital Logic?
-                        </h2>
-                        <p className="text-xl mb-8 text-blue-100">
-                            Sign in with Google to unlock progress tracking, challenges, and more!
-                        </p>
-                        <button
-                            onClick={handleSignIn}
-                            disabled={isLoading}
-                            className="inline-flex items-center gap-3 px-8 py-4 bg-white text-blue-600 rounded-lg font-semibold text-lg hover:bg-blue-50 transition-all transform hover:-translate-y-0.5 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                            </svg>
-                            {isLoading ? 'Signing In...' : 'Sign in with Google'}
-                        </button>
-                        <div className="mt-6 inline-flex items-center gap-2 text-sm text-blue-200">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-                            </svg>
-                            <span>Your data is secure and private</span>
-                        </div>
-                    </div>
-                </div>
+                </>
             )}
         </div>
     );
