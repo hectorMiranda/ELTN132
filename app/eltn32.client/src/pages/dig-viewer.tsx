@@ -98,7 +98,7 @@ function DigViewerContent() {
 
     // Panel visibility
     const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showAIAnalysis, setShowAIAnalysis] = useState(false);
 
     // Zoom and Pan State
     const [zoom, setZoom] = useState(1);
@@ -557,6 +557,30 @@ function DigViewerContent() {
         setZoom(z => Math.max(0.1, Math.min(5, z * delta)));
     };
 
+    const handleMinimapClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+        if (!bounds || !canvasRef.current || !minimapRef.current) return;
+        
+        const rect = minimapRef.current.getBoundingClientRect();
+        const clickX = e.clientX - rect.left;
+        const clickY = e.clientY - rect.top;
+        
+        const minimapW = 200;
+        const minimapH = 150;
+        const scale = Math.min(minimapW / bounds.width, minimapH / bounds.height);
+        
+        // Convert minimap click to circuit coordinates
+        const circuitX = clickX / scale + bounds.minX;
+        const circuitY = clickY / scale + bounds.minY;
+        
+        // Center the viewport on the clicked position
+        const canvasW = canvasRef.current.width;
+        const canvasH = canvasRef.current.height;
+        const newPanX = canvasW / 2 - (circuitX - bounds.minX) * zoom;
+        const newPanY = canvasH / 2 - (circuitY - bounds.minY) * zoom;
+        
+        setPan({ x: newPanX, y: newPanY });
+    };
+
     // --- Statistics ---
     const stats = useMemo(() => {
         const icCounts: Record<string, number> = {};
@@ -575,9 +599,9 @@ function DigViewerContent() {
     }, [components]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-140px)]">
+        <div className="flex flex-col h-[calc(100vh-64px)]">
             {/* Toolbar - integrated with app layout */}
-            <div className="flex-none bg-slate-900 border-b border-slate-700 px-4 py-3 -mx-4 -mt-6 sm:-mx-6 lg:-mx-8">
+            <div className="flex-none bg-slate-900 border-b border-slate-700 px-4 py-3">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-lg flex items-center justify-center shadow-lg">
@@ -616,15 +640,6 @@ function DigViewerContent() {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                     </svg>
                                 </button>
-                                <button
-                                    onClick={() => setShowRightPanel(!showRightPanel)}
-                                    className={`px-3 py-2 rounded-lg text-sm font-medium transition ${showRightPanel ? 'bg-slate-700 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                                    title="Toggle Analysis"
-                                >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </button>
                             </>
                         )}
                     </div>
@@ -632,10 +647,10 @@ function DigViewerContent() {
             </div>
 
             {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden mt-4">
+            <div className="flex-1 flex overflow-hidden">
                 {/* Left Panel */}
                 {showLeftPanel && components.length > 0 && (
-                    <div className="w-80 flex-none bg-slate-800 border-r border-slate-700 flex flex-col rounded-l-lg overflow-hidden">
+                    <div className="w-80 flex-none bg-slate-800 border-r border-slate-700 flex flex-col overflow-hidden">
                         <div className="flex-none bg-slate-900 px-4 py-3 border-b border-slate-700">
                             <h2 className="font-bold text-white flex items-center gap-2 text-sm">
                                 <svg className="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -684,6 +699,75 @@ function DigViewerContent() {
                                 </div>
                             </div>
 
+                            {/* AI Analysis Section */}
+                            <div className="border-t border-slate-700 pt-3">
+                                <button
+                                    onClick={() => setShowAIAnalysis(!showAIAnalysis)}
+                                    className="w-full flex items-center justify-between p-2 rounded-lg hover:bg-slate-700/50 transition"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                        </svg>
+                                        <span className="text-sm font-semibold text-white">AI Analysis</span>
+                                    </div>
+                                    <svg className={`w-4 h-4 text-slate-400 transition-transform ${showAIAnalysis ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {showAIAnalysis && (
+                                    <div className="mt-3 space-y-3">
+                                        <p className="text-xs text-slate-400">
+                                            Detect timing hazards, unused pins, and optimization opportunities.
+                                        </p>
+
+                                        <button
+                                            onClick={() => callAzureAnalysis(xmlContent)}
+                                            disabled={analyzing}
+                                            className="w-full py-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            {analyzing ? (
+                                                <span className="flex items-center justify-center gap-2">
+                                                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                    Analyzing...
+                                                </span>
+                                            ) : (
+                                                'Run AI Analysis'
+                                            )}
+                                        </button>
+
+                                        {aiResult && (
+                                            <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden">
+                                                <div className="bg-slate-950/50 px-3 py-2 flex justify-between items-center border-b border-slate-700/50">
+                                                    <span className="text-xs font-semibold text-white">Report</span>
+                                                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${aiResult.riskLevel === 'Low' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'}`}>
+                                                        {aiResult.riskLevel}
+                                                    </span>
+                                                </div>
+                                                <div className="p-3 space-y-2">
+                                                    <p className="text-xs text-slate-300 leading-relaxed">{aiResult.summary}</p>
+                                                    <div>
+                                                        <h4 className="text-xs font-semibold text-white mb-1">Suggestions:</h4>
+                                                        <ul className="space-y-1">
+                                                            {aiResult.suggestions.map((s, i) => (
+                                                                <li key={i} className="flex gap-2 text-xs text-slate-400">
+                                                                    <span className="text-indigo-400 flex-shrink-0">•</span>
+                                                                    <span>{s}</span>
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Stats Summary */}
                             <div className="pt-3 border-t border-slate-700">
                                 <div className="flex justify-between text-sm mb-2">
@@ -700,7 +784,7 @@ function DigViewerContent() {
                 )}
 
                 {/* Center Canvas */}
-                <div className="flex-1 flex flex-col rounded-lg overflow-hidden relative" style={{ backgroundColor: '#E5E5E5' }}>
+                <div className="flex-1 flex flex-col overflow-hidden relative" style={{ backgroundColor: '#E5E5E5' }}>
                     <div className="flex-1 overflow-hidden relative">
                         {bounds ? (
                             <>
@@ -752,7 +836,9 @@ function DigViewerContent() {
                                         ref={minimapRef}
                                         width={200}
                                         height={150}
-                                        className="rounded border border-slate-600"
+                                        className="rounded border border-slate-600 cursor-pointer"
+                                        onClick={handleMinimapClick}
+                                        title="Click to navigate"
                                     />
                                 </div>
                             </>
@@ -782,71 +868,6 @@ function DigViewerContent() {
                     </div>
                 </div>
 
-                {/* Right Panel */}
-                {showRightPanel && components.length > 0 && (
-                    <div className="w-96 flex-none bg-slate-800 border-l border-slate-700 flex flex-col rounded-r-lg overflow-hidden">
-                        <div className="flex-none bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 border-b border-indigo-500/30">
-                            <h2 className="font-bold text-white flex items-center gap-2 text-sm">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                </svg>
-                                <span>AI Circuit Analysis</span>
-                            </h2>
-                        </div>
-
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <p className="text-indigo-200 text-sm">
-                                Detect potential timing hazards, unused pins, and logic optimization opportunities.
-                            </p>
-
-                            <button
-                                onClick={() => callAzureAnalysis(xmlContent)}
-                                disabled={analyzing}
-                                className="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                {analyzing ? (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Analyzing...
-                                    </span>
-                                ) : (
-                                    'Run AI Analysis'
-                                )}
-                            </button>
-
-                            {/* AI Results */}
-                            {aiResult && (
-                                <div className="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden">
-                                    <div className="bg-slate-950/50 px-4 py-2 flex justify-between items-center border-b border-slate-700/50">
-                                        <span className="text-sm font-semibold text-white">Analysis Report</span>
-                                        <span className={`px-2 py-1 rounded text-xs font-bold ${
-                                            aiResult.riskLevel === 'Low' ? 'bg-green-500/20 text-green-300 border border-green-500/30' : 'bg-red-500/20 text-red-300 border border-red-500/30'
-                                        }`}>
-                                            {aiResult.riskLevel} Risk
-                                        </span>
-                                    </div>
-                                    <div className="p-4 space-y-3">
-                                        <p className="text-slate-300 text-sm leading-relaxed">{aiResult.summary}</p>
-                                        <div>
-                                            <h4 className="font-semibold text-white text-sm mb-2">Suggestions:</h4>
-                                            <ul className="space-y-2">
-                                                {aiResult.suggestions.map((s, i) => (
-                                                    <li key={i} className="flex gap-2 text-slate-400 text-sm">
-                                                        <span className="text-indigo-400 flex-shrink-0">•</span>
-                                                        <span>{s}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                )}
             </div>
         </div>
     );
