@@ -3,6 +3,23 @@
 import type { UserFeatureData, UserData, UserFeature } from '../types/game';
 
 const AZURE_FUNCTIONS_URL = process.env.NEXT_PUBLIC_AZURE_FUNCTIONS_URL || 'http://localhost:7226';
+const AZURE_FUNCTIONS_KEY = process.env.NEXT_PUBLIC_AZURE_FUNCTIONS_KEY || '';
+
+/**
+ * Get headers for Azure Functions API calls
+ */
+function getHeaders(): HeadersInit {
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+    };
+
+    // Add x-functions-key header if API key is configured
+    if (AZURE_FUNCTIONS_KEY) {
+        headers['x-functions-key'] = AZURE_FUNCTIONS_KEY;
+    }
+
+    return headers;
+}
 
 export interface ApiResponse<T> {
     success: boolean;
@@ -19,9 +36,7 @@ export async function getUserData(email: string): Promise<ApiResponse<UserData>>
             `${AZURE_FUNCTIONS_URL}/api/users/${encodeURIComponent(email)}`,
             {
                 method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: getHeaders(),
             }
         );
 
@@ -149,12 +164,9 @@ export async function updateUserFeature(
             updatedFeatures = [...currentData.features, updatedFeature];
         }
 
-        // Send update to API
         const response = await fetch(`${AZURE_FUNCTIONS_URL}/api/users`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: getHeaders(),
             body: JSON.stringify({
                 emailAddress: email,
                 username: currentData.username || 'User',
