@@ -1,27 +1,32 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { auth } from '../firebaseConfig';
-import { User, onAuthStateChanged } from 'firebase/auth';
+import { type User, onAuthStateChanged } from 'firebase/auth';
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
+    children: React.ReactNode | ((user: User | null) => React.ReactNode);
+    allowGuest?: boolean;
 }
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
+export default function ProtectedRoute({ children, allowGuest = false }: ProtectedRouteProps) {
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState(true);
     const router = useRouter();
 
     useEffect(() => {
         if (!auth) {
-            router.push('/');
+            if (!allowGuest) {
+                router.push('/');
+            } else {
+                setLoading(false);
+            }
             return;
         }
 
         // Listen to auth state changes
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-            if (!currentUser) {
-                // User not authenticated, redirect to home
+            if (!currentUser && !allowGuest) {
+                // User not authenticated and guest mode not allowed, redirect to home
                 router.push('/');
             } else {
                 setUser(currentUser);
@@ -30,7 +35,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         });
 
         return () => unsubscribe();
-    }, [router]);
+    }, [router, allowGuest]);
 
     if (loading) {
         return (
@@ -43,9 +48,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
         );
     }
 
-    if (!user) {
+    if (!user && !allowGuest) {
         return null; // Will redirect in useEffect
     }
 
-    return <>{children}</>;
+    // Support render prop pattern to pass user state
+    return <>{typeof children === 'function' ? children(user) : children}</>;
 }

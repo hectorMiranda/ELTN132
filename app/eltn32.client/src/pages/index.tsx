@@ -1,8 +1,11 @@
 ﻿import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { auth } from '../firebaseConfig';
-import { User, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import type { User } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { TOOLS, CATEGORIES, getToolsByCategory } from '../config/tools';
+import { getUserData } from '../utils/azureApi';
+import type { UserData } from '../types/game';
 
 export default function Home() {
     const [user, setUser] = useState<User | null>(null);
@@ -30,18 +33,69 @@ export default function Home() {
         }
     };
 
-    // Mock user activity data - In production, fetch from database
-    const userActivity = {
-        totalScore: 850,
-        completedTools: 4,
-        lastActivity: '2 hours ago',
-        recentScores: [
-            { tool: 'Boolean Expressions', score: 95, date: 'Today' },
-            { tool: 'Logic Gates', score: 88, date: 'Yesterday' },
-            { tool: 'K-Map Solver', score: 92, date: '2 days ago' },
-        ],
-        streak: 5,
+    const [userData, setUserData] = useState<UserData | null>(null);
+    const [loadingUserData, setLoadingUserData] = useState(false);
+
+    // Fetch user data from Azure Functions when user logs in
+    useEffect(() => {
+        if (user?.email) {
+            loadUserData();
+        } else {
+            setUserData(null);
+        }
+    }, [user]);
+
+    const loadUserData = async () => {
+        if (!user?.email) return;
+
+        setLoadingUserData(true);
+        const response = await getUserData(user.email);
+        if (response.success && response.data) {
+            setUserData(response.data);
+        }
+        setLoadingUserData(false);
     };
+
+    // Calculate user activity from real data
+    const userActivity = {
+        totalScore: userData?.features.reduce((sum, f) => sum + f.recentScore, 0) || 0,
+        completedTools: userData?.features.length || 0,
+        lastActivity: userData?.lastUpdated
+            ? getTimeAgo(new Date(userData.lastUpdated))
+            : 'Never',
+        recentScores: userData?.features
+            .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+            .slice(0, 3)
+            .map(f => ({
+                tool: getToolName(f.featureName),
+                score: f.recentScore,
+                date: getTimeAgo(new Date(f.lastUpdated)),
+            })) || [],
+        streak: 0, // TODO: Calculate streak from activity data
+    };
+
+    // Helper function to get tool display name from feature name
+    function getToolName(featureName: string): string {
+        const toolMap: Record<string, string> = {
+            'bin2dec': 'Binary to Decimal',
+            'dec2bin': 'Decimal to Binary',
+            'boolean-algebra': 'Boolean Algebra',
+            'k-map': 'K-Map Solver',
+            'logic-gates': 'Logic Gates',
+        };
+        return toolMap[featureName] || featureName;
+    }
+
+    // Helper function to get relative time
+    function getTimeAgo(date: Date): string {
+        const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+
+        if (seconds < 60) return 'Just now';
+        if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+        if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+        if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
+        return date.toLocaleDateString();
+    }
 
     return (
         <div className="min-h-screen">
@@ -76,7 +130,7 @@ export default function Home() {
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
                                     <div className="text-xl sm:text-2xl font-bold text-green-400">{userActivity.completedTools}/{TOOLS.length}</div>
-                                    <div className="text-xs text-slate-300">Tools Completed</div>
+                                    <div className="text-xs text-slate-300">Tools Unlocked</div>
                                 </div>
                                 <div className="bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg p-3">
                                     <div className="text-xl sm:text-2xl font-bold text-orange-400">{userActivity.streak}</div>
@@ -92,7 +146,7 @@ export default function Home() {
 
                     {/* Main Content Area - 2 Column Layout */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-                        
+
                         {/* Left: Recent Activity - Compact Card */}
                         <div className="lg:col-span-1">
                             <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm sticky top-20">
@@ -113,7 +167,7 @@ export default function Home() {
                                         </div>
                                     ))}
                                 </div>
-                                
+
                                 {/* Quick Actions */}
                                 <div className="mt-4 pt-4 border-t border-slate-100">
                                     <h4 className="text-xs font-semibold text-slate-500 uppercase mb-2">Quick Actions</h4>
